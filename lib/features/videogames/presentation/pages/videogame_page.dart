@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gamingapp/features/videogames/presentation/blocs/videogame_bloc.dart';
 import 'package:gamingapp/features/videogames/presentation/pages/create_videogame.dart';
 import 'package:gamingapp/features/videogames/presentation/pages/update_videogame.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class VideoGamePage extends StatefulWidget {
   const VideoGamePage({super.key});
@@ -16,7 +17,23 @@ class _VideoGamePageState extends State<VideoGamePage> {
   @override
   void initState() {
     super.initState();
-    context.read<VideoGameBloc>().add(GetVideoGame());
+    //Guardar de local a remoto
+    var subscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult result) {
+      if (result == ConnectivityResult.wifi ||
+          result == ConnectivityResult.mobile) {
+        context.read<VideoGameBloc>().add(GetVideoGame());
+        ScaffoldMessenger.of(context).clearSnackBars();
+        //Guardar lo traido de remoto a local{
+        //
+        //}
+      } else {
+        //Trae info en local
+        const snackBar = SnackBar(content: Text('No tienes internet pobre'), duration: Duration(days: 1),);
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      }
+    });
   }
 
   @override
@@ -55,10 +72,13 @@ class _VideoGamePageState extends State<VideoGamePage> {
                       IconButton(
                         icon: Icon(Icons.edit),
                         onPressed: () {
- Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) =>  UpdateVideoGame(videoGame: videogame,)),
-          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => UpdateVideoGame(
+                                      videoGame: videogame,
+                                    )),
+                          );
                           // Lógica de edición aquí
                         },
                       ),
@@ -120,9 +140,7 @@ class _VideoGamePageState extends State<VideoGamePage> {
                                 );
                               },
                             );
-                          }
-
-                          ),
+                          }),
                     ],
                   ),
                   subtitle: Row(
