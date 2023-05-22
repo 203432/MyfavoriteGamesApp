@@ -6,7 +6,7 @@ class AddVideoGameUsecase {
 
   AddVideoGameUsecase(this.videoGameRepository);
 
-  Future<void> execute(VideoGame videoGame ) async {
-    return await videoGameRepository.addGames(videoGame);
+  Future<void> execute(List<VideoGame> videoGames ) async {
+    return await videoGameRepository.addGames(videoGames);
   }
 }

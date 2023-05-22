@@ -6,9 +6,9 @@ abstract class VideoGameEvent {}
 class GetVideoGame extends VideoGameEvent {}
 
 class AddGames extends VideoGameEvent {
-  final VideoGame videoGame;
+  final List<VideoGame> videoGames;
 
-  AddGames({required this.videoGame});
+  AddGames({required this.videoGames});
 }
 
 class DeleteGame extends VideoGameEvent {
@@ -22,3 +22,5 @@ class UpdateGame extends VideoGameEvent {
 
   UpdateGame({required this.videoGame});
 }
+
+class getGamesOffline extends VideoGameEvent {}

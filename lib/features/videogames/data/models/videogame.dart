@@ -4,7 +4,7 @@ class VideoGameModel extends VideoGame {
   VideoGameModel(
       {required int id,
       required String name,
-      required int releaseYear,
+      required String releaseYear,
       required String developer,
       required String genre})
       : super(

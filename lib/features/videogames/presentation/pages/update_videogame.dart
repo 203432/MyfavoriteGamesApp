@@ -159,7 +159,7 @@ class _UpdateVideoGameState extends State<UpdateVideoGame> {
                             var videoGame = VideoGame(
                                 id: widget.videoGame.id,
                                 name: _nameGame.text,
-                                releaseYear: int.parse(_realeaseYearGame.text),
+                                releaseYear: _realeaseYearGame.text,
                                 developer: _developerGame.text,
                                 genre: _genreGame.text);
                             BlocProvider.of<VideoGamesBlocModify>(context)

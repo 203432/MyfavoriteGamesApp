@@ -1,10 +1,15 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gamingapp/features/videogames/domain/entities/videogame.dart';
 import 'package:gamingapp/features/videogames/presentation/blocs/videogame_bloc.dart';
 import 'package:gamingapp/features/videogames/presentation/pages/create_videogame.dart';
 import 'package:gamingapp/features/videogames/presentation/pages/update_videogame.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VideoGamePage extends StatefulWidget {
   const VideoGamePage({super.key});
@@ -14,26 +19,86 @@ class VideoGamePage extends StatefulWidget {
 }
 
 class _VideoGamePageState extends State<VideoGamePage> {
+  late StreamSubscription<ConnectivityResult> subscription;
+
   @override
   void initState() {
     super.initState();
+    checkInternet();
     //Guardar de local a remoto
-    var subscription = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      if (result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.mobile) {
-        context.read<VideoGameBloc>().add(GetVideoGame());
-        ScaffoldMessenger.of(context).clearSnackBars();
-        //Guardar lo traido de remoto a local{
-        //
-        //}
-      } else {
-        //Trae info en local
-        const snackBar = SnackBar(content: Text('No tienes internet pobre'), duration: Duration(days: 1),);
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  checkInternet() async {
+    final connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.wifi) {
+      print('Hay internet');
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey('addOffline')) {
+        String? videoGamesCache = prefs.getString('addOffline');
+        prefs.remove('addOffline');
+        if (videoGamesCache != null) {
+          List<dynamic> list = json.decode(videoGamesCache);
+          List<VideoGame> videoGames =
+              list.map((map) => VideoGame.fromMap(map)).toList();
+
+          final BuildContext currentContext = context;
+          Future.microtask(() {
+            final videoGameBloc = currentContext.read<VideoGamesBlocModify>();
+            videoGameBloc.add(AddGames(videoGames: videoGames));
+          });
+        }
       }
-    });
+    } else {
+      final BuildContext currentContext = context;
+      Future.microtask(() {
+        final videoGameBloc = currentContext.read<VideoGameBloc>();
+        videoGameBloc.add(getGamesOffline());
+        const snackBar = SnackBar(
+          content: Text('No tienes internet pobre'),
+          duration: Duration(days: 1),
+        );
+        ScaffoldMessenger.of(currentContext).showSnackBar(snackBar);
+      });
+
+      subscription = Connectivity()
+          .onConnectivityChanged
+          .listen((ConnectivityResult result) async {
+        if (result == ConnectivityResult.wifi) {
+          final prefs = await SharedPreferences.getInstance();
+          if (prefs.containsKey('addOffline')) {
+            String? videoGamesCache = prefs.getString('addOffline');
+            prefs.remove('addOffline');
+            if (videoGamesCache != null) {
+              List<dynamic> list = json.decode(videoGamesCache);
+              List<VideoGame> videoGames =
+                  list.map((map) => VideoGame.fromMap(map)).toList();
+
+              final BuildContext currentContext = context;
+              Future.microtask(() {
+                final videoGameBloc =
+                    currentContext.read<VideoGamesBlocModify>();
+                videoGameBloc.add(AddGames(videoGames: videoGames));
+              });
+            }
+          }
+          final BuildContext currentContext = context;
+          Future.microtask(() async {
+            final videoGameBloc = currentContext.read<VideoGameBloc>();
+            await Future.delayed(const Duration(milliseconds: 95))
+                .then((value) => videoGameBloc.add(GetVideoGame()))
+                .then((value) =>
+                    ScaffoldMessenger.of(currentContext).clearSnackBars());
+          });
+        } else {
+          context.read<VideoGameBloc>().add(getGamesOffline());
+          const snackBar = SnackBar(
+            content: Text("No tienes internet, intentalo mas tarde"),
+            duration: Duration(days: 1),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        }
+      });
+    }
   }
 
   @override

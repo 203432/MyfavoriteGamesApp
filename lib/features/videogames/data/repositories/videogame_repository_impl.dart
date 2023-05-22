@@ -13,8 +13,8 @@ class VideoGameRepositoryImpl implements VideoGameRepository {
   }
 
   @override
-  Future<void> addGames(VideoGame videoGame) async {
-    return await videoGameRemoteDataSource.addGames(videoGame);
+  Future<void> addGames(List<VideoGame> videoGames) async {
+    return await videoGameRemoteDataSource.addGames(videoGames);
   }
 
   @override

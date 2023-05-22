@@ -6,6 +6,8 @@ abstract class VideoGameState {}
 
 class Loading extends VideoGameState {}
 
+class InitialState extends VideoGameState {}
+
 class Loaded extends VideoGameState {
   final List<VideoGame> videogame;
 
