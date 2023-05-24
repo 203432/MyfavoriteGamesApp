@@ -1,6 +1,9 @@
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gamingapp/features/videogames/domain/entities/videogame.dart';
 import 'package:gamingapp/features/videogames/domain/usecases/add_videogame_usecase.dart';
@@ -162,8 +165,65 @@ class _UpdateVideoGameState extends State<UpdateVideoGame> {
                                 releaseYear: _realeaseYearGame.text,
                                 developer: _developerGame.text,
                                 genre: _genreGame.text);
-                            BlocProvider.of<VideoGamesBlocModify>(context)
-                                .add(UpdateGame(videoGame: videoGame));
+                            await (Connectivity().checkConnectivity())
+                                .then(((connectivityResult) async {
+                              if (connectivityResult ==
+                                  ConnectivityResult.wifi) {
+                                print('Entro aqui');
+                                List<VideoGame> videoGames = [];
+                                BlocProvider.of<VideoGamesBlocModify>(context)
+                                    .add(UpdateGame(videoGame: videoGame));
+                                videoGames.add(videoGame);
+                              } else {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                if (prefs.containsKey('addOffline')) {
+                                  String? notesCache =
+                                      prefs.getString('addOffline');
+                                  prefs.remove('addOffline');
+                                  if (notesCache != null) {
+                                    List<dynamic> videogameList =
+                                        json.decode(notesCache);
+                                    List<VideoGame> videoGames = videogameList
+                                        .map((map) => VideoGame.fromMap(map))
+                                        .toList();
+                                    BlocProvider.of<VideoGamesBlocModify>(
+                                            context)
+                                        .add(UpdateGame(videoGame: videoGame));
+                                    videoGames.add(videoGame);
+                                    List<Map<String, dynamic>> list = videoGames
+                                        .map((videogame) => videogame.toMap())
+                                        .toList();
+                                    String game = json.encode(list);
+                                    prefs.setString('addOffline', game);
+                                  }
+                                } else {
+                                  List<VideoGame> videogames = [];
+                                  videogames.add(videoGame);
+                                  List<Map<String, dynamic>> list = videogames
+                                      .map((videogame) => videogame.toMap())
+                                      .toList();
+                                  String encodedVideogames = json.encode(list);
+                                  prefs.setString(
+                                      'addOffline', encodedVideogames);
+                                }
+                                final BuildContext currentContext = context;
+                                Future.microtask((() {
+                                  Navigator.of(currentContext).pop();
+                                  ScaffoldMessenger.of(currentContext)
+                                      .clearSnackBars();
+                                }));
+                                const snackBar = SnackBar(
+                                  content: Text(
+                                      'No internet connection. Pending Changes.'),
+                                  duration: Duration(days: 365),
+                                );
+
+                                print('ola');
+                              }
+                            }));
+                            // BlocProvider.of<VideoGamesBlocModify>(context)
+                            //     .add(UpdateGame(videoGame: videoGame));
                           },
                           shape: RoundedRectangleBorder(
                               side: const BorderSide(
